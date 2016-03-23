@@ -1,6 +1,7 @@
-from PIL import ImageGrab
+rom PIL import ImageGrab
 import win32gui
 import numpy as np
+import win32com.client as comclt
 
 def takeScreenshot():
 	toplist, winlist = [], []
@@ -29,6 +30,13 @@ def takeScreenshot():
 
 def main():
 	mat = takeScreenshot()
+	
+	wsh= comclt.Dispatch("WScript.Shell")
+	wsh.AppActivate("jnes 1.1") # select another application
+	wsh.SendKeys("{UP}")
+	wsh.SendKeys("{DOWN}")
+	wsh.SendKeys("{LEFT}")
+	wsh.SendKeys("{RIGHT}") # send the keys you want
 
 if __name__ == '__main__':
 	main()
