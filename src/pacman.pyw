@@ -20,7 +20,6 @@
 
 import pygame, sys, os, random
 from pygame.locals import *
-import time
 
 # WIN???
 SCRIPT_PATH=os.path.join(sys.path[0],"..")
@@ -166,13 +165,14 @@ class game ():
 
         # numerical display digits
         self.digit = {}
-        for i in range(0, 10, 1):
-            self.digit[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text",str(i) + ".gif")).convert()
-        self.imLife = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","life.gif")).convert()
-        self.imGameOver = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","gameover.gif")).convert()
-        self.imReady = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","ready.gif")).convert()
-        self.imLogo = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","logo.gif")).convert()
-        self.imHiscores = self.makehiscorelist()
+        if globalGui:
+            for i in range(0, 10, 1):
+                self.digit[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text",str(i) + ".gif")).convert()
+            self.imLife = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","life.gif")).convert()
+            self.imGameOver = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","gameover.gif")).convert()
+            self.imReady = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","ready.gif")).convert()
+            self.imLogo = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","logo.gif")).convert()
+            self.imHiscores = self.makehiscorelist()
         
     def StartNewGame (self):
         self.levelNum = 1
@@ -503,16 +503,17 @@ class ghost ():
         self.currentPath = ""
         
         self.anim = {}
-        for i in range(1, 7, 1):
-            self.anim[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","ghost " + str(i) + ".gif")).convert()
-            
-            # change the ghost color in this frame
-            for y in range(0, 16, 1):
-                for x in range(0, 16, 1):
+        if globalGui:
+            for i in range(1, 7, 1):
+                self.anim[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","ghost " + str(i) + ".gif")).convert()
                 
-                    if self.anim[i].get_at( (x, y) ) == (255, 0, 0, 255):
-                        # default, red ghost body color
-                        self.anim[i].set_at( (x, y), ghostcolor[ self.id ] )
+                # change the ghost color in this frame
+                for y in range(0, 16, 1):
+                    for x in range(0, 16, 1):
+                    
+                        if self.anim[i].get_at( (x, y) ) == (255, 0, 0, 255):
+                            # default, red ghost body color
+                            self.anim[i].set_at( (x, y), ghostcolor[ self.id ] )
             
         self.animFrame = 1
         self.animDelay = 0
@@ -669,8 +670,9 @@ class fruit ():
         self.nearestCol = (-1, -1)
         
         self.imFruit = {}
-        for i in range(0, 5, 1):
-            self.imFruit[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","fruit " + str(i) + ".gif")).convert()
+        if globalGui:
+            for i in range(0, 5, 1):
+                self.imFruit[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","fruit " + str(i) + ".gif")).convert()
         
         self.currentPath = ""
         self.fruitType = 1
@@ -782,12 +784,13 @@ class pacman ():
         self.anim_pacmanS = {}
         self.anim_pacmanCurrent = {}
         
-        for i in range(1, 9, 1):
-            self.anim_pacmanL[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-l " + str(i) + ".gif")).convert()
-            self.anim_pacmanR[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-r " + str(i) + ".gif")).convert()
-            self.anim_pacmanU[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-u " + str(i) + ".gif")).convert()
-            self.anim_pacmanD[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-d " + str(i) + ".gif")).convert()
-            self.anim_pacmanS[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman.gif")).convert()
+        if globalGui:
+            for i in range(1, 9, 1):
+                self.anim_pacmanL[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-l " + str(i) + ".gif")).convert()
+                self.anim_pacmanR[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-r " + str(i) + ".gif")).convert()
+                self.anim_pacmanU[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-u " + str(i) + ".gif")).convert()
+                self.anim_pacmanD[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman-d " + str(i) + ".gif")).convert()
+                self.anim_pacmanS[i] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","sprite","pacman.gif")).convert()
 
         self.pelletSndNum = 0
         
@@ -1305,34 +1308,34 @@ def CheckIfCloseButton(events):
             sys.exit(0)
 
 
-def CheckInputs(): 
-    
+def CheckInputs(control): 
+    keys = control.getKeys()
     if thisGame.mode == 1:
-        if pygame.key.get_pressed()[ pygame.K_RIGHT ]:
+        if keys[ pygame.K_RIGHT ]:
             if not thisLevel.CheckIfHitWall((player.x + player.speed, player.y), (player.nearestRow, player.nearestCol)): 
                 player.velX = player.speed
                 player.velY = 0
                 
-        elif pygame.key.get_pressed()[ pygame.K_LEFT ]:
+        elif keys[ pygame.K_LEFT ]:
             if not thisLevel.CheckIfHitWall((player.x - player.speed, player.y), (player.nearestRow, player.nearestCol)): 
                 player.velX = -player.speed
                 player.velY = 0
             
-        elif pygame.key.get_pressed()[ pygame.K_DOWN ]:
+        elif keys[ pygame.K_DOWN ]:
             if not thisLevel.CheckIfHitWall((player.x, player.y + player.speed), (player.nearestRow, player.nearestCol)): 
                 player.velX = 0
                 player.velY = player.speed
             
-        elif pygame.key.get_pressed()[ pygame.K_UP ]:
+        elif keys[ pygame.K_UP ]:
             if not thisLevel.CheckIfHitWall((player.x, player.y - player.speed), (player.nearestRow, player.nearestCol)):
                 player.velX = 0
                 player.velY = -player.speed
                 
-    if pygame.key.get_pressed()[ pygame.K_ESCAPE ]:
+    if keys[ pygame.K_ESCAPE ]:
         sys.exit(0)
             
     elif thisGame.mode == 3:
-        if pygame.key.get_pressed()[ pygame.K_RETURN ]:
+        if keys[ pygame.K_RETURN ]:
             thisGame.StartNewGame()
             
 
@@ -1371,49 +1374,58 @@ def GetCrossRef ():
             tileID[ str_splitBySpace[1] ] = int(str_splitBySpace[0])
             
             thisID = int(str_splitBySpace[0])
-            if not thisID in NO_GIF_TILES:
-                tileIDImage[ thisID ] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","tiles",str_splitBySpace[1] + ".gif")).convert()
-            else:
+            if globalGui:
+                if not thisID in NO_GIF_TILES:
+                    tileIDImage[ thisID ] = pygame.image.load(os.path.join(SCRIPT_PATH,"res","tiles",str_splitBySpace[1] + ".gif")).convert()
+                else:
                     tileIDImage[ thisID ] = pygame.Surface((16,16))
             
-            # change colors in tileIDImage to match maze colors
-            for y in range(0, 16, 1):
-                for x in range(0, 16, 1):
-                
-                    if tileIDImage[ thisID ].get_at( (x, y) ) == (255, 206, 255, 255):
-                        # wall edge
-                        tileIDImage[ thisID ].set_at( (x, y), thisLevel.edgeLightColor )
-                        
-                    elif tileIDImage[ thisID ].get_at( (x, y) ) == (132, 0, 132, 255):
-                        # wall fill
-                        tileIDImage[ thisID ].set_at( (x, y), thisLevel.fillColor ) 
-                        
-                    elif tileIDImage[ thisID ].get_at( (x, y) ) == (255, 0, 255, 255):
-                        # pellet color
-                        tileIDImage[ thisID ].set_at( (x, y), thisLevel.edgeShadowColor )   
-                        
-                    elif tileIDImage[ thisID ].get_at( (x, y) ) == (128, 0, 128, 255):
-                        # pellet color
-                        tileIDImage[ thisID ].set_at( (x, y), thisLevel.pelletColor )   
+                # change colors in tileIDImage to match maze colors
+                for y in range(0, 16, 1):
+                    for x in range(0, 16, 1):
+                    
+                        if tileIDImage[ thisID ].get_at( (x, y) ) == (255, 206, 255, 255):
+                            # wall edge
+                            tileIDImage[ thisID ].set_at( (x, y), thisLevel.edgeLightColor )
+                            
+                        elif tileIDImage[ thisID ].get_at( (x, y) ) == (132, 0, 132, 255):
+                            # wall fill
+                            tileIDImage[ thisID ].set_at( (x, y), thisLevel.fillColor ) 
+                            
+                        elif tileIDImage[ thisID ].get_at( (x, y) ) == (255, 0, 255, 255):
+                            # pellet color
+                            tileIDImage[ thisID ].set_at( (x, y), thisLevel.edgeShadowColor )   
+                            
+                        elif tileIDImage[ thisID ].get_at( (x, y) ) == (128, 0, 128, 255):
+                            # pellet color
+                            tileIDImage[ thisID ].set_at( (x, y), thisLevel.pelletColor )   
                 
             # print str_splitBySpace[0] + " is married to " + str_splitBySpace[1]
         lineNum += 1
 
+class keyboardControl():
+    def update(self):
+        print("Update")
+    def getKeys(self):
+        return pygame.key.get_pressed()
 
 #      __________________
 # ___/  main code block  \_____________________________________________________
 
-def pacmanGame(gui, oneGame):
+def pacmanGame(gui, oneGame, control):
+    # Hax to deal with globals in game code
+    global globalGui
+    globalGui = gui
+
     clock = pygame.time.Clock()
     pygame.init()
 
-    window = pygame.display.set_mode((1, 1))
-    pygame.display.set_caption("Pacman")
+    if gui:
+        window = pygame.display.set_mode((1, 1))
+        pygame.display.set_caption("Pacman")
 
-    global screen
-    screen = pygame.display.get_surface()
-
-    img_Background = pygame.image.load(os.path.join(SCRIPT_PATH,"res","backgrounds","1.gif")).convert()
+        global screen
+        screen = pygame.display.get_surface()
 
     # create the pacman
     global player
@@ -1449,9 +1461,9 @@ def pacmanGame(gui, oneGame):
     thisLevel.LoadLevel( thisGame.GetLevelNum() )
 
     print thisGame.screenSize
-    window = pygame.display.set_mode( thisGame.screenSize, pygame.DOUBLEBUF | pygame.HWSURFACE )
-
-    lastTime = time.clock()
+    if gui:
+        window = pygame.display.set_mode( thisGame.screenSize, pygame.DOUBLEBUF | pygame.HWSURFACE )
+        img_Background = pygame.image.load(os.path.join(SCRIPT_PATH,"res","backgrounds","1.gif")).convert()
 
     keepPlaying = True
 
@@ -1464,8 +1476,11 @@ def pacmanGame(gui, oneGame):
         CheckIfCloseButton( pygame.event.get() )
         
         if thisGame.mode == 1:
+            # let ai update happen
+            control.update()
+
             # normal gameplay mode
-            CheckInputs()
+            CheckInputs(control)
             
             thisGame.modeTimer += 1
             player.Move()
@@ -1494,7 +1509,7 @@ def pacmanGame(gui, oneGame):
                     
         elif thisGame.mode == 3:
             # game over
-            CheckInputs()
+            CheckInputs(control)
                 
         elif thisGame.mode == 4:
             # waiting to start
@@ -1578,10 +1593,9 @@ def pacmanGame(gui, oneGame):
             
             clock.tick (60)
 
-        #print('dt: {0}').format(time.clock() - lastTime)
-        lastTime = time.clock()
     return thisGame.score
 
 if __name__ == "__main__":
-    score = pacmanGame(True, True)
+    keyboard = keyboardControl()
+    score = pacmanGame(True, True, keyboard)
     print('Final score: {0}').format(score)
