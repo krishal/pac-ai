@@ -7,6 +7,9 @@ import random
 import cProfile
 import pstats
 
+from functools import partial
+from multiprocessing import Process, Pool, Queue
+
 def initKeys():
     keys = {}
     keys[pygame.K_RIGHT] = False
@@ -44,22 +47,44 @@ class nnControl():
 
         return keys
 
+    def setSuccess(self, success):
+        self.success = success
+    
+    def setScore(self, score):
+        self.score = score
+
+def runPacman(control):
+    try:
+        score = pacman.pacmanGame(False, True, control)
+    except pacman.RecurseError:
+        print "Ghost Pathplanning Failed"
+        control.setSuccess(False)
+    else:
+        control.setSuccess(True)
+        control.setScore(score)
+    finally:
+        q.put(control)
+
 def main():
-    lastTime = pygame.time.get_ticks()
+    global q
+    q = Queue()
 
-    for i in range(0,20):
-        '''
-        cProfile.run("nn = nnControl(); pacman.pacmanGame(False, True, nn)", "restats")
-        p = pstats.Stats('restats')
-        p.sort_stats('tottime').print_stats()
-        '''
+    numNNs = 1000
+    nns = [nnControl()]*numNNs
+    p = Pool(16)
 
-        nn = nnControl()
-        score = pacman.pacmanGame(False, True, nn)
-        #print('Final score: {0}').format(score)
+    p.map(runPacman, nns)
 
-        print('Game time: {0}').format(pygame.time.get_ticks() - lastTime)
-        lastTime = pygame.time.get_ticks()
+    print "Finished first pass"
+    while not q.empty():
+        nn = q.get()
+        if nn.success:
+            print "Success"
+            # Do something
+        else:
+            print "Restart"
+            runPacman(nn)
+
 
 if __name__ == '__main__':
     main()

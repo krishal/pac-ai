@@ -48,91 +48,14 @@ ghostcolor[3] = (255, 128, 0, 255)
 ghostcolor[4] = (50, 50, 255, 255) # blue, vulnerable ghost
 ghostcolor[5] = (255, 255, 255, 255) # white, flashing ghost
 
+class RecurseError(Exception):
+    def __str__(self):
+        return "Pathfinding error"
+
 #      ___________________
 # ___/  class definitions  \_______________________________________________
 
 class game ():
-
-    def defaulthiscorelist(self):
-            return [ (100000,"David") , (80000,"Andy") , (60000,"Count Pacula") , (40000,"Cleopacra") , (20000,"Brett Favre") , (10000,"Sergei Pachmaninoff") ]
-
-    def gethiscores(self):
-            """If res/hiscore.txt exists, read it. If not, return the default high scores.
-               Output is [ (score,name) , (score,name) , .. ]. Always 6 entries."""
-            try:
-              f=open(os.path.join(SCRIPT_PATH,"res","hiscore.txt"))
-              hs=[]
-              for line in f:
-                while len(line)>0 and (line[0]=="\n" or line[0]=="\r"): line=line[1:]
-                while len(line)>0 and (line[-1]=="\n" or line[-1]=="\r"): line=line[:-1]
-                score=int(line.split(" ")[0])
-                name=line.partition(" ")[2]
-                if score>99999999: score=99999999
-                if len(name)>22: name=name[:22]
-                hs.append((score,name))
-              f.close()
-              if len(hs)>6: hs=hs[:6]
-              while len(hs)<6: hs.append((0,""))
-              return hs
-            except IOError:
-              return self.defaulthiscorelist()
-              
-    def writehiscores(self,hs):
-            """Given a new list, write it to the default file."""
-            fname=os.path.join(SCRIPT_PATH,"res","hiscore.txt")
-            f=open(fname,"w")
-            for line in hs:
-              f.write(str(line[0])+" "+line[1]+"\n")
-            f.close()
-            
-    def getplayername(self):
-            """Ask the player his name, to go on the high-score list."""
-            if NO_WX: return USER_NAME
-            try:
-              import wx
-            except:
-              print "Pacman Error: No module wx. Can not ask the user his name!"
-              print "     :(       Download wx from http://www.wxpython.org/"
-              print "     :(       To avoid seeing this error again, set NO_WX in file pacman.pyw."
-              return USER_NAME
-            app=wx.App(None)
-            dlog=wx.TextEntryDialog(None,"You made the high-score list! Name:")
-            dlog.ShowModal()
-            name=dlog.GetValue()
-            dlog.Destroy()
-            app.Destroy()
-            return name
-              
-    def updatehiscores(self,newscore):
-            """Add newscore to the high score list, if appropriate."""
-            hs=self.gethiscores()
-            for line in hs:
-              if newscore>=line[0]:
-                hs.insert(hs.index(line),(newscore,self.getplayername()))
-                hs.pop(-1)
-                break
-            self.writehiscores(hs)
-
-    def makehiscorelist(self):
-            "Read the High-Score file and convert it to a useable Surface."
-            # My apologies for all the hard-coded constants.... -Andy
-            f=pygame.font.Font(os.path.join(SCRIPT_PATH,"res","VeraMoBd.ttf"),10)
-            scoresurf=pygame.Surface((276,86),pygame.SRCALPHA)
-            scoresurf.set_alpha(200)
-            linesurf=f.render(" "*18+"HIGH SCORES",1,(255,255,0))
-            scoresurf.blit(linesurf,(0,0))
-            hs=self.gethiscores()
-            vpos=0
-            for line in hs:
-              vpos+=12
-              linesurf=f.render(line[1].rjust(22)+str(line[0]).rjust(9),1,(255,255,255))
-              scoresurf.blit(linesurf,(0,vpos))
-            return scoresurf
-            
-    def drawmidgamehiscores(self):
-            """Redraw the high-score list image after pacman dies."""
-            self.imHiscores=self.makehiscorelist()
-
     def __init__ (self):
         self.levelNum = 0
         self.score = 0
@@ -172,7 +95,6 @@ class game ():
             self.imGameOver = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","gameover.gif")).convert()
             self.imReady = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","ready.gif")).convert()
             self.imLogo = pygame.image.load(os.path.join(SCRIPT_PATH,"res","text","logo.gif")).convert()
-            self.imHiscores = self.makehiscorelist()
         
     def StartNewGame (self):
         self.levelNum = 1
@@ -602,7 +524,7 @@ class ghost ():
             
             if (self.currentPath):
                 self.currentPath = self.currentPath[1:]
-                self.FollowNextPathWay()
+                self.FollowNextPathWay(0)
         
             else:
                 self.x = self.nearestCol * 16
@@ -610,10 +532,12 @@ class ghost ():
             
                 # chase pac-man
                 self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (player.nearestRow, player.nearestCol) )
-                self.FollowNextPathWay()
+                self.FollowNextPathWay(0)
             
-    def FollowNextPathWay (self):
+    def FollowNextPathWay (self, recursionDepth):
         
+        if recursionDepth > 10:
+            raise RecurseError()
         # print "Ghost " + str(self.id) + " rem: " + self.currentPath
         
         # only follow this pathway if there is a possible path found!
@@ -635,7 +559,7 @@ class ghost ():
                 if not self.state == 3:
                     # chase pac-man
                     self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (player.nearestRow, player.nearestCol) )
-                    self.FollowNextPathWay()
+                    self.FollowNextPathWay(recursionDepth+1)
                 
                 else:
                     # glasses found way back to ghost box
@@ -650,7 +574,7 @@ class ghost ():
                         randCol = random.randint(1, thisLevel.lvlWidth - 2)
 
                     self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (randRow, randCol) )
-                    self.FollowNextPathWay()
+                    self.FollowNextPathWay(recursionDepth+1)
 
 class fruit ():
     def __init__ (self):
@@ -830,7 +754,7 @@ class pacman ():
                         ghosts[i].x = ghosts[i].nearestCol * 16
                         ghosts[i].y = ghosts[i].nearestRow * 16
                         ghosts[i].currentPath = path.FindPath( (ghosts[i].nearestRow, ghosts[i].nearestCol), (thisLevel.GetGhostBoxPos()[0]+1, thisLevel.GetGhostBoxPos()[1]) )
-                        ghosts[i].FollowNextPathWay()
+                        ghosts[i].FollowNextPathWay(0)
                         
                         # set game mode to brief pause after eating
                         thisGame.SetMode( 5 )
@@ -1287,7 +1211,7 @@ class level ():
             
             # print "Ghost " + str(i) + " headed towards " + str((randRow, randCol))
             ghosts[i].currentPath = path.FindPath( (ghosts[i].nearestRow, ghosts[i].nearestCol), (randRow, randCol) )
-            ghosts[i].FollowNextPathWay()
+            ghosts[i].FollowNextPathWay(0)
             
         thisFruit.active = False
             
@@ -1497,7 +1421,6 @@ def pacmanGame(gui, oneGame, control):
                 
                 thisGame.lives -= 1
                 if thisGame.lives == -1:
-                    thisGame.updatehiscores(thisGame.score)
                     if not oneGame:
                         thisGame.SetMode( 3 )
                         thisGame.drawmidgamehiscores()
