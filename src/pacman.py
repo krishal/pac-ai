@@ -59,7 +59,7 @@ class game ():
     def __init__ (self):
         self.levelNum = 0
         self.score = 0
-        self.lives = 3
+        self.lives = 0
         
         # game "mode" variable
         # 1 = normal
@@ -536,7 +536,7 @@ class ghost ():
             
     def FollowNextPathWay (self, recursionDepth):
         
-        if recursionDepth > 10:
+        if recursionDepth > 100:
             raise RecurseError()
         # print "Ghost " + str(self.id) + " rem: " + self.currentPath
         
@@ -556,12 +556,26 @@ class ghost ():
             else:
                 # this ghost has reached his destination!!
                 
-                if not self.state == 3:
+                if self.state == 1:
                     # chase pac-man
                     self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (player.nearestRow, player.nearestCol) )
                     self.FollowNextPathWay(recursionDepth+1)
                 
-                else:
+                elif self.state == 2:
+                    # give ghost a path to a random spot (containing a pellet)
+                    (randRow, randCol) = (0, 0)
+
+                    pacColRange = range(player.nearestCol-7,player.nearestCol+7)
+                    pacRowRange = range(player.nearestRow-7,player.nearestRow+7)
+
+                    while not thisLevel.GetMapTile((randRow, randCol)) == tileID[ 'pellet' ] or (randRow, randCol) == (0, 0) or randRow in pacRowRange or randCol in pacColRange:
+                        randRow = random.randint(1, thisLevel.lvlHeight - 2)
+                        randCol = random.randint(1, thisLevel.lvlWidth - 2)
+
+                    self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (randRow, randCol) )
+                    self.FollowNextPathWay(recursionDepth+1)
+
+                elif self.state == 3:
                     # glasses found way back to ghost box
                     self.state = 1
                     self.speed = self.speed / 4
@@ -937,7 +951,11 @@ class level ():
                         for i in range(0, 4, 1):
                             if ghosts[i].state == 1:
                                 ghosts[i].state = 2
-                        
+                                ghosts[i].x = ghosts[i].nearestCol * 16
+                                ghosts[i].y = ghosts[i].nearestRow * 16
+                                ghosts[i].currentPath = []
+                                ghosts[i].FollowNextPathWay(0)
+
                     elif result == tileID[ 'door-h' ]:
                         # ran into a horizontal door
                         for i in range(0, thisLevel.lvlWidth, 1):
@@ -1384,7 +1402,7 @@ def pacmanGame(gui, oneGame, control):
     thisLevel = level()
     thisLevel.LoadLevel( thisGame.GetLevelNum() )
 
-    print thisGame.screenSize
+    # print thisGame.screenSize
     if gui:
         window = pygame.display.set_mode( thisGame.screenSize, pygame.DOUBLEBUF | pygame.HWSURFACE )
         img_Background = pygame.image.load(os.path.join(SCRIPT_PATH,"res","backgrounds","1.gif")).convert()
@@ -1426,7 +1444,7 @@ def pacmanGame(gui, oneGame, control):
                         thisGame.drawmidgamehiscores()
                     else:
                         keepPlaying = False
-                        print("Stopping Game")
+                        # print("Stopping Game")
                 else:
                     thisGame.SetMode( 4 )
                     
