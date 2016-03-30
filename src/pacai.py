@@ -295,6 +295,4 @@ def main():
 
 
 if __name__ == '__main__':
-    cProfile.run("main()", "profileStats")
-    p = pstats.Stats('profileStats')
-    p.strip_dirs().sort_stats(-1).print_stats()
+    main()

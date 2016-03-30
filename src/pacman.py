@@ -518,7 +518,7 @@ class ghost ():
         
         self.nearestRow = int(((self.y + 8) / 16))
         self.nearestCol = int(((self.x + 8) / 16))
-        print "%d" % self.x
+
         if (self.x % 16) == 0 and (self.y % 16) == 0:
             # if the ghost is lined up with the grid again
             # meaning, it's time to go to the next path item
