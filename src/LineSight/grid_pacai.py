@@ -56,7 +56,7 @@ class nnControl():
 def runPacman(genome):
     control = nnControl(genome)
     try:
-        score = pacman.pacmanGame(False, True, control)
+        score = pacman.pacmanGame(True, True, control)
     except pacman.RecurseError:
         print "Ghost Pathplanning Failed"
         score = 0

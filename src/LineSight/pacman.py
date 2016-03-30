@@ -40,9 +40,6 @@ JS_STARTBUTTON=0 # button number to start the game. this is a matter of personal
 # Must come before pygame.init()
 JS_STARTBUTTON=0 # button number to start the game. this is a matter of personal preference, and will vary from device to device
 
-# Grid dimension used for inputs to neural net
-GRID_DIMENSION=5
-
 ghostcolor = {}
 ghostcolor[0] = (255, 0, 0, 255)
 ghostcolor[1] = (255, 128, 255, 255)
@@ -62,7 +59,7 @@ class game ():
     def __init__ (self):
         self.levelNum = 0
         self.score = 0
-        self.lives = 3
+        self.lives = 0
         
         # game "mode" variable
         # 1 = normal
@@ -512,6 +509,7 @@ class ghost ():
                 
             self.animDelay = 0
             
+
     def Move (self):
         
 
@@ -539,7 +537,7 @@ class ghost ():
             
     def FollowNextPathWay (self, recursionDepth):
         
-        if recursionDepth > 10:
+        if recursionDepth > 100:
             raise RecurseError()
         # print "Ghost " + str(self.id) + " rem: " + self.currentPath
         
@@ -559,12 +557,26 @@ class ghost ():
             else:
                 # this ghost has reached his destination!!
                 
-                if not self.state == 3:
+                if self.state == 1:
                     # chase pac-man
                     self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (player.nearestRow, player.nearestCol) )
                     self.FollowNextPathWay(recursionDepth+1)
                 
-                else:
+                elif self.state == 2:
+                    # give ghost a path to a random spot (containing a pellet)
+                    (randRow, randCol) = (0, 0)
+
+                    pacColRange = range(player.nearestCol-7,player.nearestCol+7)
+                    pacRowRange = range(player.nearestRow-7,player.nearestRow+7)
+
+                    while not thisLevel.GetMapTile((randRow, randCol)) == tileID[ 'pellet' ] or (randRow, randCol) == (0, 0) or randRow in pacRowRange or randCol in pacColRange:
+                        randRow = random.randint(1, thisLevel.lvlHeight - 2)
+                        randCol = random.randint(1, thisLevel.lvlWidth - 2)
+
+                    self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (randRow, randCol) )
+                    self.FollowNextPathWay(recursionDepth+1)
+
+                elif self.state == 3:
                     # glasses found way back to ghost box
                     self.state = 1
                     self.speed = self.speed / 4
@@ -940,7 +952,11 @@ class level ():
                         for i in range(0, 4, 1):
                             if ghosts[i].state == 1:
                                 ghosts[i].state = 2
-                        
+                                ghosts[i].x = ghosts[i].nearestCol * 16
+                                ghosts[i].y = ghosts[i].nearestRow * 16
+                                ghosts[i].currentPath = []
+                                ghosts[i].FollowNextPathWay(0)
+
                     elif result == tileID[ 'door-h' ]:
                         # ran into a horizontal door
                         for i in range(0, thisLevel.lvlWidth, 1):
@@ -1266,100 +1282,7 @@ def CheckInputs(control):
             thisGame.StartNewGame()
             
 
-# def GetGridInputs():
-#     gridInputs=[]
-#     ghostRow=[]
-#     ghostCol=[]
-#     mid = int(GRID_DIMENSION/2)
-
-#     for g in range(4):
-#         ghostRow.append(ghosts[g].nearestRow)
-#         ghostCol.append(ghosts[g].nearestCol)
-
-#     for i in range(GRID_DIMENSION):
-#         yVal = player.nearestRow - mid + i
-
-#         for j in range(GRID_DIMENSION):
-#             if i == mid and j == mid:
-#                 continue
-#             xVal = player.nearestCol - mid + j
-#             if thisLevel.IsWall((yVal, xVal)): #Check for wall
-#                 # gridInputs.append(1)
-#                 gridInputs.extend([1])
-#             elif yVal in ghostRow and xVal in ghostCol: #Check for ghosts
-#                 # gridInputs.append(2)
-#                 gridInputs.extend([2])
-#             elif thisLevel.GetMapTile((yVal, xVal))<4 and thisLevel.GetMapTile((yVal, xVal))>0: #Check for pellets
-#                 # gridInputs.append(0)
-#                 gridInputs.extend([3])
-#             else: #Check for  empty space
-#                 # gridInputs.append(3)
-#                 gridInputs.extend([4])
-
-#     return gridInputs
-
-def checkLineofSight():
-    #0-3  check if there is a ghost
-    #4-7  check if there is something edible
-    #8-11 check if there is a wall
-    line = [0,0,0,0,0,0,0,0,0,0,0,0]
-    pCol = player.nearestCol
-    pRow = player.nearestRow
-    ghostRow=[]
-    ghostCol=[]
-
-    for g in range(4):
-        ghostRow.append(ghosts[g].nearestRow)
-        ghostCol.append(ghosts[g].nearestCol)
-
-    if(thisLevel.IsWall((player.nearestRow+1,player.nearestCol))):
-        line[0] = 1
-    else:
-        for i in range(0,30,1):
-            if thisLevel.IsWall((pRow+i,pCol)):
-                break
-            if (pRow+i) in ghostRow and (pCol) in ghostCol:
-                line[1] = 1
-            if thisLevel.GetMapTile((pRow+i, pCol))<4 and thisLevel.GetMapTile((pRow+i, pCol))>0:
-                line[2] = 1
-
-    if(thisLevel.IsWall((player.nearestRow,player.nearestCol+1))):
-        line[0] = 1
-    else:
-        for i in range(0,30,1):
-            if thisLevel.IsWall((pRow,pCol+i)):
-                break
-            if (pRow) in ghostRow and (pCol+i) in ghostCol:
-                line[1] = 1
-            if thisLevel.GetMapTile((pRow, pCol+i))<4 and thisLevel.GetMapTile((pRow, pCol+i))>0:
-                line[2] = 1
-
-    if(thisLevel.IsWall((player.nearestRow-1,player.nearestCol))):
-        line[0] = 1
-    else:
-        for i in range(0,30,1):
-            if thisLevel.IsWall((pRow-i,pCol)):
-                break
-            if (pRow-i) in ghostRow and (pCol) in ghostCol:
-                line[1] = 1
-            if thisLevel.GetMapTile((pRow-i, pCol))<4 and thisLevel.GetMapTile((pRow-i, pCol))>0:
-                line[2] = 1
-
-    if(thisLevel.IsWall((player.nearestRow,player.nearestCol-1))):
-        line[0] = 1
-    else:
-        for i in range(0,30,1):
-            if thisLevel.IsWall((pRow,pCol-i)):
-                break
-            if (pRow) in ghostRow and (pCol-i) in ghostCol:
-                line[1] = 1
-            if thisLevel.GetMapTile((pRow, pCol-i))<4 and thisLevel.GetMapTile((pRow, pCol-i))>0:
-                line[2] = 1
-
-
-    # print "%d, %d, %d, %d, %d, %d" %(line[0],line[4],line[8],line[1],line[5],line[9])
-    # print "%d, %d, %d, %d, %d, %d" %(line[2],line[6],line[10],line[3],line[7],line[11])
-    return line
+    
 #      _____________________________________________
 # ___/  function: Get ID-Tilename Cross References  \______________________________________ 
     
@@ -1423,6 +1346,80 @@ def GetCrossRef ():
             # print str_splitBySpace[0] + " is married to " + str_splitBySpace[1]
         lineNum += 1
 
+def checkLineofSight():
+    #0-3  check if there is a ghost
+    #4-7  check if there is something edible
+    #8-11 check if there is a wall
+    line = {}
+    for i in range(0,17,1):
+        line[i] = 0
+    pCol = player.nearestCol
+    pRow = player.nearestRow
+    ghostRow=[]
+    ghostCol=[]
+
+    for g in range(4):
+        ghostRow.append(ghosts[g].nearestRow)
+        ghostCol.append(ghosts[g].nearestCol)
+
+    for g in range(4):
+        if ghosts[g].state == 2:
+            line[16] == 1
+            break
+
+    if(thisLevel.IsWall((player.nearestRow+1,player.nearestCol))):
+        line[0] = 1
+    else:
+        for i in range(0,30,1):
+            if thisLevel.IsWall((pRow+i,pCol)):
+                break
+            if (pRow+i) in ghostRow and (pCol) in ghostCol:
+                line[1] = 1
+            if thisLevel.GetMapTile((pRow+i, pCol))<2 and thisLevel.GetMapTile((pRow+i, pCol))>0:
+                line[2] = 1
+            if thisLevel.GetMapTile((pRow+i, pCol))==3:
+                line[3] = 1
+
+    if(thisLevel.IsWall((player.nearestRow,player.nearestCol+1))):
+        line[4] = 1
+    else:
+        for i in range(0,30,1):
+            if thisLevel.IsWall((pRow,pCol+i)):
+                break
+            if (pRow) in ghostRow and (pCol+i) in ghostCol:
+                line[5] = 1
+            if thisLevel.GetMapTile((pRow, pCol+i))<4 and thisLevel.GetMapTile((pRow, pCol+i))>0:
+                line[6] = 1
+            if thisLevel.GetMapTile((pRow+i, pCol))==3:
+                line[7] = 1
+    if(thisLevel.IsWall((player.nearestRow-1,player.nearestCol))):
+        line[11] = 1
+    else:
+        for i in range(0,30,1):
+            if thisLevel.IsWall((pRow-i,pCol)):
+                break
+            if (pRow-i) in ghostRow and (pCol) in ghostCol:
+                line[9] = 1
+            if thisLevel.GetMapTile((pRow-i, pCol))<4 and thisLevel.GetMapTile((pRow-i, pCol))>0:
+                line[10] = 1
+            if thisLevel.GetMapTile((pRow+i, pCol))==3:
+                line[11] = 1
+    if(thisLevel.IsWall((player.nearestRow,player.nearestCol-1))):
+        line[12] = 1
+    else:
+        for i in range(0,30,1):
+            if thisLevel.IsWall((pRow,pCol-i)):
+                break
+            if (pRow) in ghostRow and (pCol-i) in ghostCol:
+                line[13] = 1
+            if thisLevel.GetMapTile((pRow, pCol-i))<4 and thisLevel.GetMapTile((pRow, pCol-i))>0:
+                line[14] = 1
+            if thisLevel.GetMapTile((pRow+i, pCol))==3:
+                line[15] = 1
+
+    print "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d" %(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7],line[8],line[9],line[10],line[11],line[12],line[13],line[14],line[15],line[16])
+    return line
+
 class keyboardControl():
     def update(self):
         print("Update")
@@ -1480,7 +1477,7 @@ def pacmanGame(gui, oneGame, control):
     thisLevel = level()
     thisLevel.LoadLevel( thisGame.GetLevelNum() )
 
-    #print thisGame.screenSize
+    # print thisGame.screenSize
     if gui:
         window = pygame.display.set_mode( thisGame.screenSize, pygame.DOUBLEBUF | pygame.HWSURFACE )
         img_Background = pygame.image.load(os.path.join(SCRIPT_PATH,"res","backgrounds","1.gif")).convert()
@@ -1522,7 +1519,7 @@ def pacmanGame(gui, oneGame, control):
                         thisGame.drawmidgamehiscores()
                     else:
                         keepPlaying = False
-                        #print("Stopping Game")
+                        # print("Stopping Game")
                 else:
                     thisGame.SetMode( 4 )
                     
@@ -1612,7 +1609,6 @@ def pacmanGame(gui, oneGame, control):
             
             clock.tick (60)
 
-    #print('score: {0}').format(thisGame.score)
     return thisGame.score
 
 if __name__ == "__main__":
