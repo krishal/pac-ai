@@ -8,6 +8,7 @@ import cProfile
 import pstats
 
 import os
+import pickle
 from functools import partial
 from multiprocessing import Process, Pool, Queue
 
@@ -57,11 +58,12 @@ class nnControl():
 def runPacman(genome):
     control = nnControl(genome)
     try:
+        start = time.clock();
         score = pacman.pacmanGame(False, True, control)
     except pacman.RecurseError:
         print "Ghost Pathplanning Failed"
         score = 0
-
+    print('time: {0}').format(time.clock()-start)
     return score
 
 def main():
@@ -69,12 +71,17 @@ def main():
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'grid_pacai_config')
 
-    pe = parallel.ParallelEvaluator(4, runPacman)
+    pe = parallel.ParallelEvaluator(2, runPacman)
     pop = population.Population(config_path)
+    genJump=10
 
-    pop.run(pe.evaluate, 400)
+    for numGen in range(0,1000,genJump):
+        pop.run(pe.evaluate, genJump)
 
-    winner = pop.statistics.best_genome()
+        print('Number of evaluations: {0:d}'.format(pop.total_evaluations))
+
+        with open('nn_pop'+str(numGen), 'wb') as f:
+            pickle.dump(pop, f)
 
 if __name__ == '__main__':
     main()

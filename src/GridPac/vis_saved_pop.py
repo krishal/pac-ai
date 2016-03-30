@@ -8,7 +8,7 @@ import pickle
 from neat import nn, parallel, population, visualize
 
 # load the winner
-with open('nn_pop', 'rb') as f:
+with open('nn_pop0', 'rb') as f:
     pop = pickle.load(f)
 
 winner = pop.statistics.best_genome()

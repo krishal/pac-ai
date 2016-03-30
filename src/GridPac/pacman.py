@@ -18,7 +18,7 @@
 # - Added ability to play game without graphics
 # - Removed sounds for ease of testing
 
-import pygame, sys, os, random
+import pygame, sys, os, random, time
 from pygame.locals import *
 
 # WIN???
@@ -559,12 +559,12 @@ class ghost ():
             else:
                 # this ghost has reached his destination!!
                 
-                if not self.state == 3:
+                if self.state == 1:
                     # chase pac-man
                     self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (player.nearestRow, player.nearestCol) )
                     self.FollowNextPathWay(recursionDepth+1)
                 
-                else:
+                elif self.state == 3:
                     # glasses found way back to ghost box
                     self.state = 1
                     self.speed = self.speed / 4
@@ -573,6 +573,19 @@ class ghost ():
                     (randRow, randCol) = (0, 0)
 
                     while not thisLevel.GetMapTile((randRow, randCol)) == tileID[ 'pellet' ] or (randRow, randCol) == (0, 0):
+                        randRow = random.randint(1, thisLevel.lvlHeight - 2)
+                        randCol = random.randint(1, thisLevel.lvlWidth - 2)
+
+                    self.currentPath = path.FindPath( (self.nearestRow, self.nearestCol), (randRow, randCol) )
+                    self.FollowNextPathWay(recursionDepth+1)
+
+                elif self.state == 2:
+                    # give ghost a path to a random spot (containing a pellet)
+                    (randRow, randCol) = (0, 0)
+                    pacColRange = range(player.nearestCol-5,player.nearestCol+5)
+                    pacRowRange = range(player.nearestRow-5,player.nearestRow+5)
+
+                    while not thisLevel.GetMapTile((randRow, randCol)) == tileID[ 'pellet' ] or (randRow, randCol) == (0, 0) or randRow in pacRowRange or randCol in pacColRange:
                         randRow = random.randint(1, thisLevel.lvlHeight - 2)
                         randCol = random.randint(1, thisLevel.lvlWidth - 2)
 
@@ -940,6 +953,10 @@ class level ():
                         for i in range(0, 4, 1):
                             if ghosts[i].state == 1:
                                 ghosts[i].state = 2
+                                ghosts[i].x = ghosts[i].nearestCol * 16
+                                ghosts[i].y = ghosts[i].nearestRow * 16
+                                ghosts[i].currentPath = []
+                                ghosts[i].FollowNextPathWay(0)
                         
                     elif result == tileID[ 'door-h' ]:
                         # ran into a horizontal door
@@ -1236,6 +1253,7 @@ def CheckIfCloseButton(events):
 
 
 def CheckInputs(control): 
+    # keys = control.getKeys(GetGridInputs())
     keys = control.getKeys(GetGridInputs())
     if thisGame.mode == 1:
         if keys[ pygame.K_RIGHT ]:
@@ -1290,10 +1308,10 @@ def GetGridInputs():
                 # gridInputs.append(2)
                 gridInputs.extend([0,1,0])
             elif thisLevel.GetMapTile((yVal, xVal))<4 and thisLevel.GetMapTile((yVal, xVal))>0: #Check for pellets
-                # gridInputs.append(0)
+                # gridInputs.append(3)
                 gridInputs.extend([0,0,1])
             else: #Check for  empty space
-                # gridInputs.append(3)
+                # gridInputs.append(0)
                 gridInputs.extend([0,0,0])
 
     return gridInputs
@@ -1552,7 +1570,7 @@ def pacmanGame(gui, oneGame, control):
             
             clock.tick (60)
 
-    print('score: {0}').format(thisGame.score)
+    # print('score: {0}').format(thisGame.score)
     return thisGame.score
 
 if __name__ == "__main__":
